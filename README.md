@@ -1,88 +1,88 @@
-# Extensions
+# Extending the OpenTelemetry Java Agent: StatsD Metrics Console exporter.
 
-## Introduction
+This repository demonstrates how to generate and log StatsD metrics using OpenTelemetry Java Agent extension. It provides a foundational implementation for developers looking to incorporate StatsD/Other metrics standards into their observability pipeline, particularly for tools like Splunk Enterprise or other StatsD-compatible backends.
 
-Extensions add new features and capabilities to the agent without having to create a separate distribution (for examples and ideas, see [Use cases for extensions](#sample-use-cases)).
+## Features
 
-The contents in this folder demonstrate how to create an extension for the OpenTelemetry Java instrumentation agent, with examples for every extension point.
+- **StatsD Metric Logging**: Supports counters, gauges, and other metric types.
+- **Console Output**: Logs metrics directly to the console for debugging and learning purposes.
+- **Extensibility**: Provides a base for integrating metrics into StatsD-compatible backends like Splunk, Datadog, or Telegraf.
 
-> Read both the source code and the Gradle build script, as they contain documentation that explains the purpose of all the major components.
+## Prerequisites
 
-## Build and add extensions
+To build and run the example, ensure you have the following:
 
-To build this extension project, run `./gradlew build`. You can find the resulting jar file in `build/libs/`.
+- **Java Development Kit (JDK)**: Version 8 or later.
+- **Build Tool**: Gradle (preferred) or Maven.
 
-To add the extension to the instrumentation agent:
+## Setup
 
-1. Copy the jar file to a host that is running an application to which you've attached the OpenTelemetry Java instrumentation.
-2. Modify the startup command to add the full path to the extension file. For example:
+### Clone the Repository
+
+```bash
+git clone https://github.com/mduraisamy82-new/logging-statsd.git
+cd logging-statsd
+```
+
+### Build the Project
+
+Use Gradle to build the project:
+
+```bash
+gradle build
+```
+
+This will compile the project and generate the necessary binaries in the `build/libs` directory.
+
+## Running as a Java Agent with Spring PetClinic
+
+This example can also be used as a Java agent for metrics instrumentation. You can run it alongside the Spring PetClinic application as an executable JAR.
+
+### Steps to Run as a Java Agent
+
+1. **Build the Java Agent**:
+
+   The Java agent is already configured in this repository. Build the project as described above.
+
+2. **Download the Spring PetClinic Application**:
+
+   Clone the Spring PetClinic repository and build it:
 
    ```bash
-   java -javaagent:path/to/opentelemetry-javaagent.jar \
-        -Dotel.javaagent.extensions=build/libs/opentelemetry-java-instrumentation-extension-demo-1.0-all.jar
-        -jar myapp.jar
+   git clone https://github.com/spring-projects/spring-petclinic.git
+   cd spring-petclinic
+   ./mvnw package
    ```
 
-Note: to load multiple extensions, you can specify a comma-separated list of extension jars or directories (that
-contain extension jars) for the `otel.javaagent.extensions` value.
+   This will create the `spring-petclinic-*.jar` file in the `target` directory.
 
-## Embed extensions in the OpenTelemetry Agent
+3. **Run Spring PetClinic with the Java Agent**:
 
-To simplify deployment, you can embed extensions into the OpenTelemetry Java Agent to produce a single jar file. With an integrated extension, you no longer need the `-Dotel.javaagent.extensions` command line option.
+   Use the following command to attach the `logging-statsd` agent to the Spring PetClinic application:
 
-For more information, see the `extendedAgent` task in [build.gradle](https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/main/examples/extension/build.gradle#:~:text=extendedAgent).
+   ```bash
+   java -javaagent:/path/to/opentelemetry-javaagent.jar "-Dotel.javaagent.extensions=/path/to/extensions" "-Dotel.traces.exporter=none" "-Dotel.metrics.exporter=logging-statsd"  "-Dotel.logs.exporter=none" "-Dotel.instrumentation.micrometer.enabled=true"  -jar target/spring-petclinic-*.jar
 
-## Extensions examples
+   ```
 
-[DemoAutoConfigurationCustomizerProvider]: src/main/java/com/example/javaagent/DemoAutoConfigurationCustomizerProvider.java
-[DemoIdGenerator]: src/main/java/com/example/javaagent/DemoIdGenerator.java
-[DemoPropagator]: src/main/java/com/example/javaagent/DemoPropagator.java
-[DemoSampler]: src/main/java/com/example/javaagent/DemoSampler.java
-[DemoSpanProcessor]: src/main/java/com/example/javaagent/DemoSpanProcessor.java
-[DemoSpanExporter]: src/main/java/com/example/javaagent/DemoSpanExporter.java
-[DemoServlet3InstrumentationModule]: src/main/java/com/example/javaagent/instrumentation/DemoServlet3InstrumentationModule.java
+4. **Verify Metrics**:
 
-- Custom `AutoConfigurationCustomizer`: [DemoAutoConfigurationCustomizerProvider][DemoAutoConfigurationCustomizerProvider]
-- Custom `IdGenerator`: [DemoIdGenerator][DemoIdGenerator]
-- Custom `TextMapPropagator`: [DemoPropagator][DemoPropagator]
-- Custom `Sampler`: [DemoSampler][DemoSampler]
-- Custom `SpanProcessor`: [DemoSpanProcessor][DemoSpanProcessor]
-- Custom `SpanExporter`: [DemoSpanExporter][DemoSpanExporter]
-- Additional instrumentation: [DemoServlet3InstrumentationModule][DemoServlet3InstrumentationModule]
+   The Java agent will log StatsD metrics from the Spring PetClinic application to the console. These metrics can be further routed to Splunk or other StatsD-compatible backends.
 
-`ConfigurablePropagatorProvider` and `AutoConfigurationCustomizer` implementations and custom
-instrumentation (`InstrumentationModule`) need the correct SPI (through `@AutoService`) in
-order to be loaded by the agent. Once a `ConfigurablePropagatorProvider` is added, it can be
-referenced by name in the `OTEL_PROPAGATORS` setting. `AutoConfigurationCustomizer` and
-instrumentation will be applied automatically. To apply the other extension classes to the Java
-Agent, include an `AutoConfigurationCustomizer` in your extension.
-See [DemoAutoConfigurationCustomizerProvider][DemoAutoConfigurationCustomizerProvider] for an
-example.
+## Use Cases
 
-## Sample use cases
+- **Debugging**: Quickly test StatsD metric generation locally.
+- **Education**: Learn how StatsD works in a Java application.
+- **Integration**: Build upon the example to create production-ready observability tools.
 
-Extensions are designed to override or customize the instrumentation provided by the upstream agent without having to create a new OpenTelemetry distribution or alter the agent code in any way.
+## Contributing
 
-Consider an instrumented database client that creates a span per database call and extracts data from the database connection to provide span attributes. The following are sample use cases for that scenario that can be solved by using extensions.
+Contributions are welcome! If you have suggestions for improvements or want to report an issue, please create a pull request or open an issue on the [GitHub repository](https://github.com/mduraisamy82-new/logging-statsd).
 
-### "I don't want this span at all"
+## License
 
-Create an extension to disable selected instrumentation by providing new default settings.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-### "I want to edit some attributes that don't depend on any db connection instance"
+---
 
-Create an extension that provide a custom `SpanProcessor`.
-
-### "I want to edit some attributes and their values depend on a specific db connection instance"
-
-Create an extension with new instrumentation which injects its own advice into the same method as the original one. You can use the `order` method to ensure it runs after the original instrumentation and augment the current span with new information.
-
-For example, see [DemoServlet3InstrumentationModule](src/main/java/com/example/javaagent/instrumentation/DemoServlet3InstrumentationModule.java).
-
-### "I want to remove some attributes"
-
-Create an extension with a custom exporter or use the attribute filtering functionality in the OpenTelemetry Collector.
-
-### "I don't like the OTel spans. I want to modify them and their lifecycle"
-
-Create an extension that disables existing instrumentation and replace it with new one that injects `Advice` into the same (or a better) method as the original instrumentation. You can write your `Advice` for this and use the existing `Tracer` directly or extend it. As you have your own `Advice`, you can control which `Tracer` you use.
+By using this repository, you can kickstart your journey into integrating StatsD metrics into your Java applications or use as a base for creating OpenTelemetry Java Agent extension and observability pipelines. Happy coding!
